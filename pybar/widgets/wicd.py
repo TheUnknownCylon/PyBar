@@ -1,6 +1,7 @@
 
 from pybar import Widget
 import dbus
+import logging
 
 class Wicd(Widget):
     '''
@@ -51,7 +52,7 @@ class Wicd(Widget):
             self.wireless_connected = True      
             self.wireless_status_text = str(values[2]) + "%"
         else:
-            print "Unknown state: " + repr(status)
+            logging.debug("Unknown WICD state: " + repr(status))
             self.wireless_connected = False      
             self.wireless_status_text = "?"
     

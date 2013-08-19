@@ -50,7 +50,7 @@ class IMAP(Widget, NetworkNotified):
             self.do_idle = True
             thread.start_new_thread(self.startThread, ())
         except Exception as e:
-            print e
+            logging.error(e)
             self.value("E")
     
     
@@ -60,7 +60,8 @@ class IMAP(Widget, NetworkNotified):
             self.do_idle = False
             self.mainserver.idle_done()
             self.mainserver.logout()
-        except: pass
+        except:
+            pass
         finally:
             self.mainserver = None
     
@@ -82,12 +83,14 @@ class IMAP(Widget, NetworkNotified):
             self.value("%d" % len(messages))
         except Exception as e:
             self.value("?")
-            print(e)
+            logging.error(e)
  
  
     def startThread(self):
-        try: self.waitForNewMail(self.mainserver)
-        except Exception as e: print e
+        try:
+            self.waitForNewMail(self.mainserver)
+        except Exception as e:
+            logging.error("Error while waiting for new mail!", e)
 
 
     def waitForNewMail(self, server):

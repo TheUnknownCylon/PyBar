@@ -2,6 +2,8 @@ import thread
 import os, sys
 import gobject
 
+import logging
+
 iconpath = os.path.abspath(os.path.dirname(__file__))+"/icons"
 
 try:
@@ -9,13 +11,13 @@ try:
     from dbus.mainloop.glib import DBusGMainLoop
     DBusGMainLoop(set_as_default=True)
 except Exception as e:
-    print("Could not initialize dbus: "+e)
+    logging.info("Could not initialize dbus: "+e)
 
 
 def loop():
     '''Never ending loop, DBus callbacks enabled.'''
     loop = gobject.MainLoop()
-    gobject.threads_init() #@UndefinedVariable
+    gobject.threads_init()
     loop.run()
 
 
