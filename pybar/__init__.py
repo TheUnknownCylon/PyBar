@@ -1,8 +1,9 @@
-import thread
-import os, sys
-import gobject
-
+import os
+import sys
+import threading
 import logging
+from gi.repository import Gtk
+import signal
 
 iconpath = os.path.abspath(os.path.dirname(__file__))+"/icons"
 
@@ -16,9 +17,8 @@ except Exception as e:
 
 def loop():
     '''Never ending loop, DBus callbacks enabled.'''
-    loop = gobject.MainLoop()
-    gobject.threads_init()
-    loop.run()
+    signal.signal(signal.SIGINT, signal.SIG_DFL) # Stop on ^C
+    Gtk.main()
 
 
 class WidgetManager():
@@ -93,7 +93,7 @@ class Widget():
         '''
         self.manager = manager
         self.setup(*self._args, **self._kwargs)
-        thread.start_new_thread(self.thread, ())
+        threading.Thread(target=self.thread).start()
   
     def setup(self):
         '''

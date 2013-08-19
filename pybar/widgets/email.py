@@ -15,7 +15,7 @@ except:
 
 from pybar import Widget
 from pybar.network import NetworkNotified, nwObserver
-import thread
+import threading
 
 class IMAP(Widget, NetworkNotified):
     
@@ -48,7 +48,7 @@ class IMAP(Widget, NetworkNotified):
             self.mainserver = self.connect(self.hostname, self.username, self.password)
             self.updatevalue(self.mainserver)
             self.do_idle = True
-            thread.start_new_thread(self.startThread, ())
+            threading.Thread(target=self.startThread).start()
         except Exception as e:
             logging.error(e)
             self.value("E")

@@ -1,6 +1,6 @@
 import os
 import socket
-import thread
+import threading
 
 RTMGRP_LINK        = 0x001
 RTMGRP_IPV4_IFADDR = 0x010
@@ -26,7 +26,7 @@ class NetworksObserver:
         
     def __init__(self):
         self.widgets = []
-        thread.start_new_thread(self.observe, ())
+        threading.Thread(target=self.observe).start()
        
        
     def addWidget(self, widget):
