@@ -16,34 +16,35 @@ except:
 from pybar import Widget
 from pybar.network import NetworkNotified, nwObserver
 import threading
+import logging
 
 class IMAP(Widget, NetworkNotified):
-    
+
     def setup(self, hostname, username, password, useSSL=True, use_uid=True):
         self.icon("mail")
         self.value("?")
-        
+
         if not imapclient_installed:
             self.myvalue = "not installed"
-        
+
         self.do_idle = False
         self.hostname = hostname
         self.username = username
         self.password = password
         self.useSSL   = useSSL
         self.use_uid  = use_uid
-        
+
         nwObserver.addWidget(self)
-      
-      
+
+
     def nwstate_changed(self):
         '''We are disconnected, but a new network connection has come available!'''
-        
+
         if not imapclient_installed:
             return
-        
+
         self.disconnect()
-        
+
         try:
             self.mainserver = self.connect(self.hostname, self.username, self.password)
             self.updatevalue(self.mainserver)
@@ -52,8 +53,8 @@ class IMAP(Widget, NetworkNotified):
         except Exception as e:
             logging.error(e)
             self.value("E")
-    
-    
+
+
     def disconnect(self):
         '''Handle a disconnect request. If not connected, nothing happens.'''
         try:
@@ -64,8 +65,8 @@ class IMAP(Widget, NetworkNotified):
             pass
         finally:
             self.mainserver = None
-    
-    
+
+
     def connect(self, host, username, password):
         '''Connects to the IMAP server and returns a new connection.
         The inbox is selected by default'''
@@ -84,8 +85,8 @@ class IMAP(Widget, NetworkNotified):
         except Exception as e:
             self.value("?")
             logging.error(e)
- 
- 
+
+
     def startThread(self):
         try:
             self.waitForNewMail(self.mainserver)
@@ -99,9 +100,9 @@ class IMAP(Widget, NetworkNotified):
         server.idle()
         while self.do_idle:
             _ = server.idle_check()
-            
+
             ##Got some new info (new item/ item read)! Yeey :)
             s = self.connect(self.hostname, self.username, self.password)
             self.updatevalue(s)
             s.logout()
-            
+
