@@ -1,8 +1,13 @@
-
 import base64
-import StringIO
+from io import BytesIO
 from PIL import Image
+
 import struct #convert hex to rgba
+import codecs #convert hex to rgba
+
+# Determine python version used for base64 encoding compatability
+import sys
+PY3 = sys.version_info[0] >= 3
 
 class DZENCOMMANDS:
     TW = 'tw'
@@ -12,8 +17,32 @@ class DZENCOMMANDS:
     CA = 'ca'
     PH = 'ph'  #non-dzen command, placeholder
 
+
+def hex2rgba(hexstr):
+    '''
+    Converts a hexstr to (R,G,B,A). 
+    The input hexstr should not contain the #-sign.
+    Python 2 and Python 3 compatible implementation.
+    '''
+    return struct.unpack('BBBB', codecs.getdecoder('hex_codec')(hexstr)[0])
+
+
+def data2base64(data):
+    '''
+    Converts input data to a base64 representation.
+    Output is a (decoded) string.
+    Python 2 and Python 3 compatible implementation.
+    '''
+    output_bytes = base64.b64encode(data)
+    if PY3:
+        return output_bytes.decode('ascii')
+    else:
+        return output_bytes
+    
+
 class Dzen2HTMLFormatter:
-    '''This simple class is capable of rewriting a single DZEN2 line to a
+    '''
+    This simple class is capable of rewriting a single DZEN2 line to a
     matching HTML-string, where the text is put between <span> elements.
 
     Currently only the ^tw(), ^bg(), ^fg(), and i^() are supported.
@@ -26,7 +55,7 @@ class Dzen2HTMLFormatter:
 
 
     def xbm2png(self, filename, fgcolor, bgcolor):
-        output = StringIO.StringIO()
+        output = BytesIO()
 
         try:
             img = Image.open(filename)
@@ -54,7 +83,6 @@ class Dzen2HTMLFormatter:
         color_fg = ""
         color_bg = ""
 
-
         openSpan = False  # True if there is a <span> currently opened
         newspan = True    # True if a value of the current span is not up to date
                           #  once a new span can be created, it will.
@@ -74,13 +102,12 @@ class Dzen2HTMLFormatter:
                         htmlstr += "</span>"
 
                     htmlstr += '<span style="'
-                    htmlstr += 'color: %s;'%(color_fg if color_fg else self.color_fg_default)
-                    htmlstr += 'background-color: %s;'%(color_bg if color_bg else self.color_bg_default)
+                    htmlstr += 'color: {};'.format(color_fg if color_fg else self.color_fg_default)
+                    htmlstr += 'background-color: {};'.format(color_bg if color_bg else self.color_bg_default)
                     htmlstr += '">'
                     openSpan = True
                     newspan = False
                 htmlstr += prePart.replace(" ", "&nbsp;")
-
 
                 command, _, dzenString = dzenString.partition("(")
                 args_raw, _, dzenString = dzenString.partition(")")
@@ -109,22 +136,18 @@ class Dzen2HTMLFormatter:
                             htmlstr += "</span>"
 
                         htmlstr += '<span style="'
-                        htmlstr += 'color: %s;'%color_fg if color_fg else ""
-                        htmlstr += 'background-color: %s;'%color_bg if color_bg else ""
+                        htmlstr += 'color: {};'.format(color_fg if color_fg else "")
+                        htmlstr += 'background-color: {};'.format(color_bg if color_bg else "")
                         htmlstr += '">'
                         openSpan = True
                         newspan = False
 
-                    try:
-                        #convert the selected colors to RGBA colors
-                        rgbacolorfg = struct.unpack('BBBB', ("{0}FF".format(color_fg[1:] if color_fg else self.color_fg_default[1:])).decode('hex'))
-                        rgbacolorbg = struct.unpack('BBBB', ("{0}00".format(color_bg[1:] if color_bg else self.color_bg_default[1:])).decode('hex'))
-                        img_base64 = base64.b64encode(self.xbm2png(args[0], rgbacolorfg, rgbacolorbg))
-                        htmlstr += '<img src="data:image/png;base64,%s" alt="X"/>'%img_base64
-                    except Exception as e:
-                        print("Image creation failed: %s"%repr(e))
+                    #convert the selected colors to RGBA colors
+                    rgbacolorfg = hex2rgba("{0}FF".format(color_fg[1:] if color_fg else self.color_fg_default[1:]))
+                    rgbacolorbg = hex2rgba("{0}00".format(color_bg[1:] if color_bg else self.color_bg_default[1:]))
 
-
+                    img_base64 = data2base64(self.xbm2png(args[0], rgbacolorfg, rgbacolorbg))
+                    htmlstr += '<img src="data:image/png;base64,{}" alt="X"/>'.format(img_base64)
 
         if openSpan:
             htmlstr += "</span>"

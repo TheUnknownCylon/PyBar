@@ -2,8 +2,6 @@ import os
 import sys
 import threading
 import logging
-from gi.repository import Gtk
-import signal
 
 iconpath = os.path.abspath(os.path.dirname(__file__))+"/icons"
 
@@ -12,13 +10,7 @@ try:
     from dbus.mainloop.glib import DBusGMainLoop
     DBusGMainLoop(set_as_default=True)
 except Exception as e:
-    logging.info("Could not initialize dbus: "+e)
-
-
-def loop():
-    '''Never ending loop, DBus callbacks enabled.'''
-    signal.signal(signal.SIGINT, signal.SIG_DFL) # Stop on ^C
-    Gtk.main()
+    logging.info("Could not initialize dbus: {}".format(e))
 
 
 class WidgetManager():
@@ -138,19 +130,19 @@ class Widget():
         mouse_wrap_start = ""
         mouse_wrap_end = ""
         if(self.mouse_click_left):
-            mouse_wrap_start += "^ca(1,%s)" % self.mouse_click_left
+            mouse_wrap_start += "^ca(1,{})".format(self.mouse_click_left)
             mouse_wrap_end += "^ca()"
         if(self.mouse_click_middle):
-            mouse_wrap_start += "^ca(3,%s)" % self.mouse_click_middle
+            mouse_wrap_start += "^ca(3,{})".format(self.mouse_click_middle)
             mouse_wrap_end += "^ca()"
         if(self.mouse_click_right):
-            mouse_wrap_start += "^ca(2,%s)" % self.mouse_click_right
+            mouse_wrap_start += "^ca(2,{})".format(self.mouse_click_right)
             mouse_wrap_end += "^ca()"
         if(self.mouse_scroll_down):
-            mouse_wrap_start += "^ca(4,%s)" % self.mouse_scroll_down
+            mouse_wrap_start += "^ca(4,{})".format(self.mouse_scroll_down)
             mouse_wrap_end += "^ca()"
         if(self.mouse_scroll_up):
-            mouse_wrap_start += "^ca(5,%s)" % self.mouse_scroll_up
+            mouse_wrap_start += "^ca(5,{})".format(self.mouse_scroll_up)
             mouse_wrap_end += "^ca()"
 
 

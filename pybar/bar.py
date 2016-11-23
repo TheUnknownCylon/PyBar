@@ -159,7 +159,7 @@ class Window(QWidget):
         frame = self.view.page().mainFrame()
         escaped = htmlcode.replace('"', '\\\"')
         frame.evaluateJavaScript(
-            """document.getElementById("%s").innerHTML="%s"; """ % (divid, escaped))
+            """document.getElementById("{}").innerHTML="{}"; """.format(divid, escaped))
 
     def qt_statusbar_callback(self, url):
         urldata = urlparse.urlparse(str(url))
