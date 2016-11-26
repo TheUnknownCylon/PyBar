@@ -1,8 +1,15 @@
-
-##########################################################################
-## X11 imports and methods
-
+import os
+from pybar.lib.dzenparser import Dzen2HTMLFormatter
+from PyQt4.QtCore import Qt, QRect, pyqtSignal
+from PyQt4.QtGui import QWidget, QVBoxLayout
+from PyQt4.QtWebKit import QWebView, QWebPage
 import Xlib.display
+
+try:
+    import urlparse
+except:
+    import urllib.parse as urlparse
+
 display = Xlib.display.Display()
 root = display.screen().root
 
@@ -16,30 +23,6 @@ atom_tray_opcode = display.intern_atom("_NET_SYSTEM_TRAY_OPCODE")
 atom_net_wm_pid = display.intern_atom("_NET_WM_PID")
 
 
-def x11_send_event(win, ctype, data, mask=None):
-    """ Send a ClientMessage event to the root """
-    data = (data + [0] * (5 - len(data)))[:5]
-    ev = Xlib.protocol.event.ClientMessage(
-        window=win, client_type=ctype, data=(32, (data)))
-    if not mask:
-        mask = (X.SubstructureRedirectMask | X.SubstructureNotifyMask)
-    root.send_event(ev, event_mask=mask)
-
-
-##########################################################################
-
-import os
-from pybar.lib.dzenparser import Dzen2HTMLFormatter
-from PyQt4.QtCore import Qt, QRect, pyqtSignal
-from PyQt4.QtGui import QWidget, QVBoxLayout
-from PyQt4.QtWebKit import QWebView, QWebPage
-
-try:
-    import urlparse
-except:
-    import urllib.parse as urlparse
-
-
 FGCOLOR = "#FFFFFF"
 BGCOLOR = "#1B1D1E"
 iconpath = os.path.abspath(os.path.dirname(__file__)) + "/icons"
@@ -47,7 +30,8 @@ iconpath = os.path.abspath(os.path.dirname(__file__)) + "/icons"
 
 class Bar:
 
-    def __init__(self, width, height, xpos=0, ypos=0, customIconPath=None, iconcolor=None, textcolor=None):
+    def __init__(self, width, height, xpos=0, ypos=0, customIconPath=None,
+                 iconcolor=None, textcolor=None):
         self.widgets_left = []
         self.widgets_right = []
 
@@ -73,32 +57,30 @@ class Bar:
         self.draw(widget)
 
     def draw(self, widget):
-        '''Widget callback. One widget informs its value has changed.'''
-        value = ""
-
         if widget in self.widgets_left:
-            for w in self.widgets_left:
-                value += w.toDzen2String(self.iconpath,
-                                         self.iconcolor, self.textcolor) + "  "
-            self.window.updateContent.emit(
-                'contentleft', self.formatter.format(value.strip()))
+            self.drawSection('contentleft', self.widgets_left)
 
         if widget in self.widgets_right:
-            for w in self.widgets_right:
+            self.drawSection('contentright', self.widgets_right)
 
-                # Draw the widget, but only if it has content
-                text = self.formatter.format(w.toDzen2String(
-                    self.iconpath, self.iconcolor, self.textcolor), "w{0}".format(id(w)))
-                if len(text) > 0:
-                    value += '&nbsp;&nbsp;<span id="w{}" onmouseout="mouseout(this);" onmouseover="mousehover(this);" onclick="mouseclick(this);">{}</span>&nbsp;'.format(
-                        id(w), text)
+    def drawSection(self, containerid, widgets):
+        widgetstr = ('<span id="w{}" onmouseout="mouseout(this);"'
+                     ' onmouseover="mousehover(this);"'
+                     ' onclick="mouseclick(this);">{}</span>&nbsp;')
+        value = []
+        for w in widgets:
+            # Draw the widget, but only if it has content
+            text = self.formatter.format(w.toDzen2String(
+                self.iconpath, self.iconcolor, self.textcolor),
+                "w{0}".format(id(w)))
+            if len(text) > 0:
+                value.append(widgetstr.format(id(w), text))
 
-            self.window.updateContent.emit('contentright', value)
+        self.window.updateContent.emit(containerid, ('&nbsp;' * 2).join(value))
 
     def callback(self, widgetname, action, data):
         for widget in self.widgets_left + self.widgets_right:
             if "w{}".format(id(widget)) == widgetname:
-                #widget.__getattribute__(action)(data)
                 getattr(widget, action)(**data)
 
 
@@ -142,14 +124,18 @@ class Window(QWidget):
 
         x11window = display.create_resource_object('window', self.winId())
         if self._ypos < 100:
-            x11window.change_property(atom_strut_partial, atom_cardinal, 32, [
-                                      0, 0, self._height, 0,  0, 0, 0, 0, self._xpos, self._xpos + self._width, 0, 0])
-            x11window.change_property(atom_strut, atom_cardinal, 32, [
-                                      0, 0, self._height, 0])
+            x11window.change_property(atom_strut_partial, atom_cardinal, 32,
+                                      [0, 0, self._height, 0,  0, 0, 0, 0,
+                                       self._xpos, self._xpos + self._width, 0,
+                                       0])
+            x11window.change_property(atom_strut, atom_cardinal, 32,
+                                      [0, 0, self._height, 0])
 
         else:  # bottom
-            x11window.change_property(atom_strut_partial, atom_cardinal, 32, [
-                                      0, 0, 0, self._height,  0, 0, 0, 0, self._xpos, self._xpos + self._width, self._ypos, self._ypos + self._height])
+            x11window.change_property(atom_strut_partial, atom_cardinal, 32,
+                                      [0, 0, 0, self._height,  0, 0, 0, 0,
+                                       self._xpos, self._xpos + self._width,
+                                       self._ypos, self._ypos + self._height])
             x11window.change_property(atom_strut, atom_cardinal, 32, [
                                       0, 0, 0, self._height])
 
@@ -158,8 +144,8 @@ class Window(QWidget):
     def handle_updateContent(self, divid, htmlcode):
         frame = self.view.page().mainFrame()
         escaped = htmlcode.replace('"', '\\\"')
-        frame.evaluateJavaScript(
-            """document.getElementById("{}").innerHTML="{}"; """.format(divid, escaped))
+        js = """document.getElementById("{}").innerHTML="{}"; """
+        frame.evaluateJavaScript(js.format(divid, escaped))
 
     def qt_statusbar_callback(self, url):
         urldata = urlparse.urlparse(str(url))
@@ -175,4 +161,5 @@ class Window(QWidget):
 
 def htmltemplate(width, height, border):
     templatefilename = os.path.join(os.path.dirname(__file__), 'template.html')
-    return open(templatefilename, 'r').read() % (width, height - 1, border, BGCOLOR, FGCOLOR)
+    template = open(templatefilename, 'r').read()
+    return template % (width, height - 1, border, BGCOLOR, FGCOLOR)

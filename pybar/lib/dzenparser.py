@@ -2,25 +2,26 @@ import base64
 from io import BytesIO
 from PIL import Image
 
-import struct #convert hex to rgba
-import codecs #convert hex to rgba
+import struct  # convert hex to rgba
+import codecs  # convert hex to rgba
 
 # Determine python version used for base64 encoding compatability
 import sys
 PY3 = sys.version_info[0] >= 3
 
+
 class DZENCOMMANDS:
-    TW = 'tw'
-    BG = 'bg'
-    FG = 'fg'
-    I  = 'i'
-    CA = 'ca'
-    PH = 'ph'  #non-dzen command, placeholder
+    TW = 'tw'  # ^tw() draw to title window (only supported option)
+    BG = 'bg'  # ^bg(color) set background color with hex value
+    FG = 'fg'  # ^fg(color)
+    I = 'i'    # ^i(path)   draw icon
+    CA = 'ca'  # ^ca(btn, cmd) clickable area
+    PH = 'ph'  # ^ph(width, height, id) non-dzen command, placeholder
 
 
 def hex2rgba(hexstr):
     '''
-    Converts a hexstr to (R,G,B,A). 
+    Converts a hexstr to (R,G,B,A).
     The input hexstr should not contain the #-sign.
     Python 2 and Python 3 compatible implementation.
     '''
@@ -38,7 +39,50 @@ def data2base64(data):
         return output_bytes.decode('ascii')
     else:
         return output_bytes
-    
+
+
+def format_span(colorfg, colorbg, content):
+    htmlstr = '<span style="color: {}; background-color: {};">{}</span>'
+    return htmlstr.format(colorfg, colorbg, content.replace(' ', '&nbsp;'))
+
+
+def format_ph(width, height, id, widgetid):
+    htmlstr = ('<span widgetid="{3}" style="display:inline-block; '
+               'width:{0}px; height:{1}px;" class="bar_placeholder" id="{2}">'
+               '&nbsp;</span>')
+    return htmlstr.format(width, height, id, widgetid)
+
+
+def xbm2png(filename, colorfg, colorbg):
+    # convert the selected colors to RGBA colors
+    rgbacolorfg = hex2rgba("{0}FF".format(colorfg[1:]))
+    rgbacolorbg = hex2rgba("{0}00".format(colorbg[1:]))
+
+    output = BytesIO()
+    try:
+        img = Image.open(filename)
+        imgrgba = img.convert('RGBA')
+        imgrgbadata = imgrgba.getdata()
+
+        newData = []
+        for pixel in imgrgbadata:
+            if pixel[0] == 0:
+                newData.append(rgbacolorbg)
+            else:
+                newData.append(rgbacolorfg)
+
+        imgrgba.putdata(newData)
+        imgrgba.save(output, 'PNG')
+        return output.getvalue()
+
+    finally:
+        output.close()
+
+
+def format_i(imgpath, colorfg, colorbg):
+    img_base64 = data2base64(xbm2png(imgpath, colorfg, colorbg))
+    return '<img src="data:image/png;base64,{}" alt="X"/>'.format(img_base64)
+
 
 class Dzen2HTMLFormatter:
     '''
@@ -53,103 +97,44 @@ class Dzen2HTMLFormatter:
         self.color_fg_default = colorfg
         self.color_bg_default = colorbg
 
-
-    def xbm2png(self, filename, fgcolor, bgcolor):
-        output = BytesIO()
-
-        try:
-            img = Image.open(filename)
-            imgrgba = img.convert('RGBA')
-            imgrgbadata = imgrgba.getdata()
-
-            newData = []
-            for pixel in imgrgbadata:
-                if pixel[0] == 0:
-                    newData.append(bgcolor)
-                else:
-                    newData.append(fgcolor)
-
-            imgrgba.putdata(newData)
-            imgrgba.save(output, 'PNG')
-            return output.getvalue()
-
-        finally:
-            output.close()
-
-
     def format(self, dzenString, wid=None):
-        htmlstr = ''
+        htmlstr = []
 
-        color_fg = ""
-        color_bg = ""
-
-        openSpan = False  # True if there is a <span> currently opened
-        newspan = True    # True if a value of the current span is not up to date
-                          #  once a new span can be created, it will.
-        ca_stack = []     # Stack of command actions, which should be closed with ^C(A)
+        color_fg = self.color_fg_default
+        color_bg = self.color_bg_default
 
         while dzenString:
-            #Find the first non-escaped ^
+            # Find the first non-escaped ^
+            prePart, _, dzenString = dzenString.partition('^')
 
-            prePart, _, dzenString = dzenString.partition("^")
+            if prePart:
+                htmlstr.append(format_span(color_fg, color_bg, prePart))
+
             if not dzenString:
-                htmlstr += prePart
                 break
 
+            command, _, dzenString = dzenString.partition("(")
+            args_raw, _, dzenString = dzenString.partition(")")
+            args = [arg.strip() for arg in args_raw.split(",")]
+
+            if not command:
+                pass
+
+            elif command == DZENCOMMANDS.BG:
+                color_bg = args[0]
+
+            elif command == DZENCOMMANDS.FG:
+                color_fg = args[0]
+
+            elif command == DZENCOMMANDS.PH:
+                width = args[0]
+                height = args[1]
+                id = args[2]
+                htmlstr.append(format_ph(width, height, id, wid))
+
+            elif command == DZENCOMMANDS.I:
+                htmlstr.append(format_i(args[0], color_fg, color_bg))
+
             else:
-                if newspan:
-                    if openSpan:
-                        htmlstr += "</span>"
-
-                    htmlstr += '<span style="'
-                    htmlstr += 'color: {};'.format(color_fg if color_fg else self.color_fg_default)
-                    htmlstr += 'background-color: {};'.format(color_bg if color_bg else self.color_bg_default)
-                    htmlstr += '">'
-                    openSpan = True
-                    newspan = False
-                htmlstr += prePart.replace(" ", "&nbsp;")
-
-                command, _, dzenString = dzenString.partition("(")
-                args_raw, _, dzenString = dzenString.partition(")")
-                args = [arg.strip() for arg in args_raw.split(",")]
-
-                if not command:
-                    pass
-
-                elif command == DZENCOMMANDS.BG:
-                    newspan = True
-                    color_bg = args[0]
-
-                elif command == DZENCOMMANDS.FG:
-                    newspan = True
-                    color_fg = args[0]
-
-                elif command == DZENCOMMANDS.PH:
-                    w = args[0]
-                    h = args[1]
-                    id = args[2]
-                    htmlstr += '<span widgetid="{3}" style="display:inline-block; width:{0}px; height:{1}px;" class="bar_placeholder" id="{2}">&nbsp;</span>'.format(w,h,id, wid)
-
-                elif command == DZENCOMMANDS.I:
-                    if newspan:
-                        if openSpan:
-                            htmlstr += "</span>"
-
-                        htmlstr += '<span style="'
-                        htmlstr += 'color: {};'.format(color_fg if color_fg else "")
-                        htmlstr += 'background-color: {};'.format(color_bg if color_bg else "")
-                        htmlstr += '">'
-                        openSpan = True
-                        newspan = False
-
-                    #convert the selected colors to RGBA colors
-                    rgbacolorfg = hex2rgba("{0}FF".format(color_fg[1:] if color_fg else self.color_fg_default[1:]))
-                    rgbacolorbg = hex2rgba("{0}00".format(color_bg[1:] if color_bg else self.color_bg_default[1:]))
-
-                    img_base64 = data2base64(self.xbm2png(args[0], rgbacolorfg, rgbacolorbg))
-                    htmlstr += '<img src="data:image/png;base64,{}" alt="X"/>'.format(img_base64)
-
-        if openSpan:
-            htmlstr += "</span>"
-
-        return htmlstr
+                print("Unknown command: {}".format(command))
+        return ''.join(htmlstr)

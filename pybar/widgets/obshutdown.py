@@ -1,5 +1,5 @@
-
 from pybar import Widget
+
 
 class OBShutdown(Widget):
     '''
@@ -14,4 +14,3 @@ class OBShutdown(Widget):
     def setup(self):
         self.icon("arch")
         self.mouse_click_left = "obshutdown"
-
