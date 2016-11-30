@@ -1,50 +1,35 @@
-
 import time
-from time import strftime
 from datetime import datetime
 
 from pybar import Widget
 
+
 class Clock(Widget):
     '''
     Clock widget, representing the system time.
-    '''   
-    def setup(self):
-        self.update()
-        self.icon("clock")
-    
-    def update(self):
-        self.value(strftime("%H:%M", time.localtime()))
-    
-    def thread(self):
-        while True:
-            self.update()
-            time.sleep(60)
-
-
-
-class TimeZoneClock(Widget):
     '''
-    Clock widget, printing the current time for a given timezone.
-    Setting up with a PyTZ timezone object.
-    '''
-    def setup(self, timezone, prefix=""):
-        '''
-        TimeZone should be a PyTZ object, for example:
-          timezone = pytz.timezone('US/Pacific-New')
-          
-        Prefix can be added for human readability.
-        '''
-        self.prefix = prefix
-        self.timezone = timezone
+
+    def setup(self, showDate=True, timezone=None, prefix=""):
+        self._showDate = showDate
+        self._timezone = timezone
+        self._prefix = prefix
         self.icon("clock")
         self.update()
 
     def update(self):
-        self.value(self.prefix + datetime.now(self.timezone).strftime("%H:%M"))
+        timestr = datetime.now(self._timezone).strftime("%H:%M")
+
+        # Funny thing
+        if timestr == "13:37":
+            timestr = "LE:ET"
+
+        datestr = ""
+        if self._showDate:
+            datestr = datetime.now(self._timezone).strftime("%d-%m-%Y")
+
+        self.value(self._prefix + timestr + " " + datestr)
 
     def thread(self):
         while True:
             self.update()
-            time.sleep(60)
-            
+            time.sleep(20)
