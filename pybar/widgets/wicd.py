@@ -17,16 +17,15 @@ class Wicd(Widget):
         self.wireless_status_text = "?"
         self.wired_status_text = "?"
 
-        self.ip = None
-        self.accesspoint = None
-        self.signalstrength = None
-        self.speed = None
-
-        system_bus = dbus.SystemBus()
-
-        wicd = system_bus.get_object('org.wicd.daemon', '/org/wicd/daemon')
-        wicd_interface = dbus.Interface(wicd, dbus_interface='org.wicd.daemon')
-        wicd_interface.connect_to_signal('StatusChanged', self.wicdupdate)
+        try:
+            system_bus = dbus.SystemBus()
+            wicd = system_bus.get_object('org.wicd.daemon', '/org/wicd/daemon')
+            wicd_interface = dbus.Interface(wicd, dbus_interface='org.wicd.daemon')
+            wicd_interface.connect_to_signal('StatusChanged', self.wicdupdate)
+        except:
+            logging.error("Could not register to Wicd DBUS")
+            self.wireless_status_text = "ERROR"
+            self.wired_status_text = "ERROR"
 
         self.icon("wifi")
         self.updatetext()
@@ -39,10 +38,10 @@ class Wicd(Widget):
 
         if status == 0:  # disconnected
             self.wireless_connected = False
-            self.wireless_status_text = "_"
+            self.wireless_status_text = "Disconnected"
         elif status == 1:  # Connecting
             self.wireless_connected = False
-            self.wireless_status_text = "..."
+            self.wireless_status_text = "Connecting"
         elif status == 2:  # Connected
             self.wireless_connected = True
             self.wireless_status_text = str(values[2]) + "%"
@@ -53,8 +52,3 @@ class Wicd(Widget):
 
         self.updatetext()
 
-        self.ip = values[0]
-        self.accesspoint = values[1]
-
-        self.signalstrength = str(values[2])
-        self.speed = values[4]

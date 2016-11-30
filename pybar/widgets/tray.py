@@ -1,15 +1,7 @@
-
-from pybar import HTMLPopupWidget, Widget
-
 import Xlib
-from Xlib.X import CurrentTime as XCurrentTime, ClientMessage, PointerMotionMask
-from Xlib.protocol.request import SetSelectionOwner
+from Xlib.X import CurrentTime as XCurrentTime
 
-
-from PyQt4.QtGui import QWidget, QPalette
-from PyQt4.QtCore import Qt, QRect
-
-debug = True
+from pybar import HTMLPopupWidget
 
 
 class TrayWindow:
@@ -25,7 +17,7 @@ class Tray(HTMLPopupWidget):
 
     def setup(self, barwindow, namerewriter, shownames=True):
         self._namerewriter = namerewriter
-        self.shownames = shownames  # Should the plugin also redraw the application name
+        self.shownames = shownames  # Also show application names or just icons
         self._barwindow = barwindow
         self.iconsize = 12  # Holds width and height for each icon
         self.trayicons = []  # Holds all the tray-icons to manage
@@ -107,7 +99,7 @@ class Tray(HTMLPopupWidget):
 
     def thread(self):
         if not self.istray:
-            #We are NOT the tray owner...
+            # We are NOT the tray owner...
             return
 
         display = self.display

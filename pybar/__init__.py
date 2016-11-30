@@ -1,10 +1,16 @@
 import os
+import signal
 import sys
 import threading
 import logging
 
+from PyQt4.QtGui import QApplication
 from PyQt4.QtGui import QWidget
-from PyQt4.QtCore import Qt, QRect
+from PyQt4.QtCore import Qt
+from PyQt4.QtCore import QRect
+
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+app = QApplication(sys.argv)
 
 iconpath = os.path.abspath(os.path.dirname(__file__)) + "/icons"
 
