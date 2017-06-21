@@ -1,8 +1,9 @@
 import os
+import logging
 from pybar.lib.dzenparser import Dzen2HTMLFormatter
-from PyQt4.QtCore import Qt, QRect, pyqtSignal
-from PyQt4.QtGui import QWidget, QVBoxLayout
-from PyQt4.QtWebKit import QWebView, QWebPage
+from PyQt5.QtCore import Qt, QRect, pyqtSignal
+from PyQt5.QtWidgets import QWidget, QVBoxLayout
+from PyQt5.QtWebKitWidgets import QWebView, QWebPage
 import Xlib.display
 
 try:
@@ -81,7 +82,10 @@ class Bar:
     def callback(self, widgetname, action, data):
         for widget in self.widgets_left + self.widgets_right:
             if "w{}".format(id(widget)) == widgetname:
-                getattr(widget, action)(**data)
+                try:
+                    getattr(widget, action)(**data)
+                except Exception as e:
+                    logging.debug('Widget {} callback {} could not be executed: {}.'.format(widget, action, e))
 
 
 class Window(QWidget):
@@ -121,8 +125,7 @@ class Window(QWidget):
         self.setWindowFlags(Qt.X11BypassWindowManagerHint)
         self.setGeometry(QRect(self._xpos, self._ypos,
                                self._width, self._height))
-
-        x11window = display.create_resource_object('window', self.winId())
+        x11window = display.create_resource_object('window', int(self.winId()))
         if self._ypos < 100:
             x11window.change_property(atom_strut_partial, atom_cardinal, 32,
                                       [0, 0, self._height, 0,  0, 0, 0, 0,

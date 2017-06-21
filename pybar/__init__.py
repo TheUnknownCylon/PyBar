@@ -4,10 +4,10 @@ import sys
 import threading
 import logging
 
-from PyQt4.QtGui import QApplication
-from PyQt4.QtGui import QWidget
-from PyQt4.QtCore import Qt
-from PyQt4.QtCore import QRect
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QWidget
+from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QRect
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 app = QApplication(sys.argv)
