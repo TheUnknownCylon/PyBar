@@ -48,7 +48,7 @@ from pybar.widgets.inputreader import InputReader
 
 if __name__ == "__main__":
     # Create 1920x14 status bar
-    topbar = Bar(1920, 14, iconcolor="#EBAC54")
+    topbar = Bar(iconcolor="#EBAC54")
     topbar.addWidgetLeft(InputReader())
     topbar.addWidgetRight(Clock())
     run()

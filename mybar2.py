@@ -19,12 +19,10 @@ def trayName(name, wm_class):
 
     return name.title()
 
+
 if __name__ == "__main__":
     # Create the bar object
-    # topbar = Bar(1920, 14, xpos=1680, iconcolor="#EBAC54")  # Top
-    #topbar = Bar(1920, 14, xpos=1920, iconcolor="#EBAC54")  # Top
-    topbar = Bar(1920, 18, iconcolor="#EBAC54")  # Top
-    # bar_bottom = Bar(1920, 6, 0, 1080-6)  #Bottom
+    topbar = Bar(iconcolor="#EBAC54")
 
     topbar.addWidgetLeft(InputReader())
     # topbar.addWidgetRight(ClockCalendar())

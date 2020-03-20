@@ -2,17 +2,12 @@ import os
 import logging
 from pybar.lib.dzenparser import Dzen2HTMLFormatter
 from PyQt5.QtCore import Qt, QRect, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QVBoxLayout
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QDesktopWidget
 from PyQt5.QtWebKitWidgets import QWebView, QWebPage
 import Xlib.display
-
-try:
-    import urlparse
-except:
-    import urllib.parse as urlparse
+import urllib.parse as urlparse
 
 display = Xlib.display.Display()
-root = display.screen().root
 
 atom_strut = display.intern_atom("_NET_WM_STRUT")
 atom_strut_partial = display.intern_atom("_NET_WM_STRUT_PARTIAL")
@@ -32,14 +27,16 @@ iconpath = os.path.abspath(os.path.dirname(__file__)) + "/icons"
 
 class Bar:
 
-    def __init__(self, width, height, xpos=0, ypos=0, customIconPath=None,
-                 iconcolor=None, textcolor=None):
+    def __init__(self, width=None, height=16, xpos=0, ypos=0,
+                 customIconPath=None, iconcolor=None, textcolor=None):
         self.widgets_left = []
         self.widgets_right = []
 
         self.iconpath = customIconPath or iconpath
         self.iconcolor = iconcolor or ""
         self.textcolor = textcolor or ""
+
+        width = width if width else QDesktopWidget().screenGeometry(-1).width()
 
         self.window = Window(self, xpos, ypos, width, height)
         self.window.show()
