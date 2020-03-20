@@ -16,7 +16,8 @@ root = display.screen().root
 
 atom_strut = display.intern_atom("_NET_WM_STRUT")
 atom_strut_partial = display.intern_atom("_NET_WM_STRUT_PARTIAL")
-atom_cardinal = display.intern_atom('CARDINAL')
+atom_cardinal = display.intern_atom("CARDINAL")
+atom_net_wm_dock = display.intern_atom("_NET_WM_WINDOW_TYPE_DOCK")
 atom_net_system_tray = display.intern_atom(
     "_NET_SYSTEM_TRAY_S%d" % display.get_default_screen())
 atom_manager = display.intern_atom("MANAGER")
@@ -126,6 +127,12 @@ class Window(QWidget):
         self.setGeometry(QRect(self._xpos, self._ypos,
                                self._width, self._height))
         x11window = display.create_resource_object('window', int(self.winId()))
+
+        _ATOM = display.intern_atom("ATOM")
+        _TYPE = display.intern_atom("_NET_WM_WINDOW_TYPE")
+        _DOCK = display.intern_atom("_NET_WM_WINDOW_TYPE_DOCK")
+        x11window.change_property(_TYPE, _ATOM, 32, [_DOCK])
+
         if self._ypos < 100:
             x11window.change_property(atom_strut_partial, atom_cardinal, 32,
                                       [0, 0, self._height, 0,  0, 0, 0, 0,

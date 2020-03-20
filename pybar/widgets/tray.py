@@ -19,6 +19,7 @@ class Tray(HTMLPopupWidget):
         self._namerewriter = namerewriter
         self.shownames = shownames  # Also show application names or just icons
         self._barwindow = barwindow
+
         self.iconsize = 12  # Holds width and height for each icon
         self.trayicons = []  # Holds all the tray-icons to manage
         self.display = None  # Assume to be set if self.istray is True
@@ -77,7 +78,6 @@ class Tray(HTMLPopupWidget):
             traywindow.get_wm_name(), traywindow.get_wm_class())
         self.trayicons.append(TrayWindow(trayname, traywindow))
         self.update()
-        self.repaintTrayIcons()
 
     def removeTrayIcon(self, traywindow):
         self.trayicons = [
@@ -127,7 +127,8 @@ class Tray(HTMLPopupWidget):
                         pass
 
                     if pid:
-                        traywindow.reparent(self._barwindow.winId(), 0, 0)
+                        windowId = int(self._barwindow.winId())
+                        traywindow.reparent(windowId, 0, 0)
 
                         ourmask = (Xlib.X.ExposureMask |
                                    Xlib.X.StructureNotifyMask)

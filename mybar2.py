@@ -1,8 +1,10 @@
-#!/bin/python2
+#!/usr/bin/env python3
 
 from pybar.application import run
 from pybar.bar import Bar
-from pybar.widgets import BattMon, Clock, OBShutdown
+from pybar.widgets.battmon import BattMon
+from pybar.widgets.clock import Clock
+from pybar.widgets.obshutdown import OBShutdown
 from pybar.widgets.inputreader import InputReader
 from pybar.widgets.tray import Tray
 
@@ -21,7 +23,7 @@ if __name__ == "__main__":
     # Create the bar object
     # topbar = Bar(1920, 14, xpos=1680, iconcolor="#EBAC54")  # Top
     #topbar = Bar(1920, 14, xpos=1920, iconcolor="#EBAC54")  # Top
-    topbar = Bar(1600, 14, iconcolor="#EBAC54")  # Top
+    topbar = Bar(1920, 18, iconcolor="#EBAC54")  # Top
     # bar_bottom = Bar(1920, 6, 0, 1080-6)  #Bottom
 
     topbar.addWidgetLeft(InputReader())
